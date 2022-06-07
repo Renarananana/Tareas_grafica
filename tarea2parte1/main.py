@@ -5,7 +5,7 @@ from OpenGL.GL import *
 from gpu_shape import GPUShape
 from easy_shaders import SimpleModelViewProjectionShaderProgram, textureSimpleSetup, \
     SimpleModelViewProjectionShaderProgramTex
-from basic_shapes import createCube, createSphere
+from basic_shapes import createCube, createSphere, createRoof, createSquare
 import numpy as np
 import transformations as tr
 import constants
@@ -35,7 +35,7 @@ camara = camara.Camara()
 # rotamos la camara cuando apretamos las felchas del teclado
 def keyCallback(GLFWwindow, key, scancode, action, mods):
 
-    move_controls = [glfw.KEY_LEFT,glfw.KEY_RIGHT,glfw.KEY_UP,glfw.KEY_DOWN,glfw.KEY_W,glfw.KEY_S]
+    move_controls = [glfw.KEY_LEFT,glfw.KEY_RIGHT,glfw.KEY_UP,glfw.KEY_DOWN,glfw.KEY_W,glfw.KEY_S,glfw.KEY_A, glfw.KEY_D]
 
     if key in move_controls:
         if key == glfw.KEY_RIGHT:
@@ -52,6 +52,9 @@ def keyCallback(GLFWwindow, key, scancode, action, mods):
             camara.direction = [0,0,-1]
         if action == glfw.RELEASE:
             camara.direction = [0,0,0]
+
+
+
 
 # creamos el controlador con las pelotas
 control = Controller()
@@ -78,23 +81,27 @@ def main():
         return -1
     glfw.make_context_current(window)
 
-    # llamamos al programa de shaders del cubo (color)
-    pipeline = SimpleModelViewProjectionShaderProgram()
 
-    # creamos el cubo usando estos shaders
-    glUseProgram(pipeline.shaderProgram)
-    c1 = createCube().getGPUShape(pipeline)
+
+
 
     # llamamos el programa de shaders de las esferas (textura)
-    pipeline2 = SimpleModelViewProjectionShaderProgramTex()
+    pipeline = SimpleModelViewProjectionShaderProgramTex()
+
 
     # creamos las esferas usando estos shaders
-    glUseProgram(pipeline2.shaderProgram)
-    s1 = createSphere(.2).getGPUShape(pipeline2)
-    s2 = createSphere(.2).getGPUShape(pipeline2)
+    glUseProgram(pipeline.shaderProgram)
+    c1 = createCube().getGPUShape(pipeline)
+    techo = createRoof().getGPUShape(pipeline)
+    s1 = createSphere(.2).getGPUShape(pipeline)
+    s2 = createSphere(.2).getGPUShape(pipeline)
+    puerta = createSquare().getGPUShape(pipeline)
     # les decimos que texturas ocupar a cada una de las esferas
+    techo.texture = textureSimpleSetup(getAssetPath("techo.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
     s1.texture = textureSimpleSetup(getAssetPath("bola8.png"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
     s2.texture = textureSimpleSetup(getAssetPath("tenis.png"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
+    puerta.texture = textureSimpleSetup(getAssetPath("puerta.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
+    c1.texture = textureSimpleSetup(getAssetPath("muralla_blanca.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
     # calculamos la matriz de perspectiva
     projection = tr.perspective(60, float(width) / float(height), 0.1, 100)
 
@@ -129,49 +136,50 @@ def main():
 
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
 
-        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "model"), 1, GL_TRUE, tr.matmul([
-            tr.translate(0.0, 0.0, 0.0),
-            tr.scale(1.0, 1.0, 1.0)
-        ]))
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "model"), 1, GL_TRUE,
+            tr.translate(0.0, 0.0, 0.0))
 
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "transform"), 1, GL_TRUE, tr.matmul(
-            [tr.translate(0, 0, 0)]))
+            [tr.translate(0, 0, -0.7),
+             tr.scale(2,2,1.7)]))
 
         # pintamos el cubo usando lineas
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-        pipeline.drawCall(c1, mode=GL_LINES)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        pipeline.drawCall(c1,c1.texture)
 
         ## ESFERAS
 
-        # usamos los shaders de las esferas (texturas)
-        glUseProgram(pipeline2.shaderProgram)
-
-        # rellenamos los shaders
-        glUniformMatrix4fv(glGetUniformLocation(pipeline2.shaderProgram, "projection"), 1, GL_TRUE, projection)
-
-        glUniformMatrix4fv(glGetUniformLocation(pipeline2.shaderProgram, "view"), 1, GL_TRUE, view)
-
-        glUniformMatrix4fv(glGetUniformLocation(pipeline2.shaderProgram, "model"), 1, GL_TRUE, tr.matmul([
-            tr.translate(0.0, 0.0, 0.0),
-            tr.scale(1.0, 1.0, 1.0)
-        ]))
-
         # bola 1
-        glUniformMatrix4fv(glGetUniformLocation(pipeline2.shaderProgram, "transform"), 1, GL_TRUE, tr.matmul(
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "transform"), 1, GL_TRUE, tr.matmul(
             [tr.translate(control.b1.pos[0], control.b1.pos[1], control.b1.pos[2]),
              tr.rotationX(control.b1.angle[0]), tr.rotationY(control.b1.angle[1]), tr.rotationZ(control.b1.angle[2])]))
 
         # cambiamos el modo de pintar (llenar y no lineas)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
         # la pintamos
-        pipeline2.drawCall(s1, s1.texture)
+        pipeline.drawCall(s1, s1.texture)
 
         # bola 2
-        glUniformMatrix4fv(glGetUniformLocation(pipeline2.shaderProgram, "transform"), 1, GL_TRUE, tr.matmul(
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "transform"), 1, GL_TRUE, tr.matmul(
             [tr.translate(control.b2.pos[0], control.b2.pos[1], control.b2.pos[2]),
              tr.rotationX(control.b1.angle[0]), tr.rotationY(control.b1.angle[1]), tr.rotationZ(control.b1.angle[2])]))
         # la pintamos
-        pipeline2.drawCall(s2, s2.texture)
+        pipeline.drawCall(s2, s2.texture)
+
+        #puerta
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "transform"), 1, GL_TRUE, tr.matmul(
+            [tr.scale(.2, 1, .4),
+             tr.translate(0,-1.001,-2.5),
+             ]))
+
+        pipeline.drawCall(puerta, puerta.texture)
+
+        # techo
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "transform"), 1, GL_TRUE, tr.matmul(
+            [tr.scale(1.3, 1, 1),
+             ]))
+
+        pipeline.drawCall(techo, techo.texture)
 
         glfw.swap_buffers(window)
 
@@ -179,6 +187,8 @@ def main():
     c1.clear()
     s1.clear()
     s2.clear()
+    techo.clear()
+    puerta.clear()
 
     glfw.terminate()
 

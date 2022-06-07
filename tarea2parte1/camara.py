@@ -18,6 +18,8 @@ class Camara:
     def update(self,dt):
         if self.free:
             self.moveDirection(dt)
+
+
     def moveDirection(self,dt):
         # funcion que mueve la camara en todas las direcciones
         self.pos[0] += self.direction[0] *dt*self.speed
