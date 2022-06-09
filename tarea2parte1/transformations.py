@@ -8,6 +8,12 @@ def translate(tx, ty, tz):
         [0,0,1,tz],
         [0,0,0,1]], dtype = np.float32)
 
+def identity():
+    return np.array([
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]], dtype=np.float32)
 
 def scale(sx, sy, sz):
     #matriz de escala

@@ -94,14 +94,15 @@ class SimpleShader():
 
         glBindVertexArray(0)
 
-    def drawCall(self, gpuShape,tex = None, mode=GL_TRIANGLES):
+    def drawCall(self, gpuShape, mode=GL_TRIANGLES):
 
         glBindVertexArray(gpuShape.vao)
-        if tex is not None: #para los objetos con textura
-            glBindTexture(GL_TEXTURE_2D, tex)
+        if gpuShape.texture is not None: #para los objetos con textura
+            glBindTexture(GL_TEXTURE_2D, gpuShape.texture)
         glDrawElements(mode, gpuShape.size, GL_UNSIGNED_INT, None)
         
         glBindVertexArray(0)
+
 
 #shader para dibujar objetos con texturas y con un modelo de vision
 class SimpleModelViewProjectionShaderProgramTex(SimpleShader):
@@ -120,7 +121,7 @@ class SimpleModelViewProjectionShaderProgramTex(SimpleShader):
             out vec2 outTexCoords;
             void main()
             {
-                gl_Position =  projection * view * model * transform* vec4(position, 1.0f);
+                gl_Position =  projection * view * transform* vec4(position, 1.0f);
                 outTexCoords = texCoords;
             }
             """
@@ -147,6 +148,8 @@ class SimpleModelViewProjectionShaderProgramTex(SimpleShader):
             OpenGL.GL.shaders.compileShader(vertex_shader, OpenGL.GL.GL_VERTEX_SHADER),
             OpenGL.GL.shaders.compileShader(fragment_shader, OpenGL.GL.GL_FRAGMENT_SHADER))
 
+
+
     def setupVAO(self, gpuShape):
         glBindVertexArray(gpuShape.vao)
 
@@ -164,6 +167,9 @@ class SimpleModelViewProjectionShaderProgramTex(SimpleShader):
 
         # Unbinding current vao
         glBindVertexArray(0)
+
+
+
 
 class SimpleModelViewProjectionShaderProgram(SimpleShader):
     #shader para dibujar objetos con colores y un modelo de visión.

@@ -14,10 +14,21 @@ class Camara:
         self.free = True
         self.speed = 10
         self.direction = [0,0,0]
+        self.vel_ang = 0.0
 
     def update(self,dt):
         if self.free:
             self.moveDirection(dt)
+            self.move_ang(dt)
+
+
+    def move_ang(self,dt):
+        if self.vel_ang == 0:
+            return
+        self.at = tr.matmul([tr.translate(self.pos[0],self.pos[1],self.pos[2]),
+                              tr.rotationZ(self.vel_ang*dt),
+                              tr.translate(-self.pos[0],-self.pos[1],-self.pos[2]),
+                              np.append(self.at,[1])])[:-1]
 
 
     def moveDirection(self,dt):

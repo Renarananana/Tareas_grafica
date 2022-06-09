@@ -24,10 +24,10 @@ def createSquare():
 
     vertexData = np.array([
         # positions        # texture
-        -1.0, 0.0, -1.0, 0.0, 0.0,
-        1.0, 0.0, -1.0, 1.0, 0.0,
-        -1.0, 0.0, 1.0, 0.0, 1.0,
-        1.0, 0.0, 1.0, 1.0, 1.0,
+        -0.5, 0.0, -0.5, 0.0, 1.0,
+        0.5, 0.0, -0.5, 1.0, 1.0,
+        -0.5, 0.0, 0.5, 0.0, 0.0,
+        0.5, 0.0, 0.5, 1.0, 0.0,
     ], dtype=np.float32)
     # indices por cada lado
     indexData = np.array([
@@ -35,16 +35,29 @@ def createSquare():
     ])
     return Shape(vertexData, indexData)
 
+def createTriangle():
+    vertexData = np.array([
+        # positions        # texture
+        -0.5, 0.0, -0.5, 0.0, 0.0,
+        0.5, 0.0, -0.5, 1.0, 0.0,
+        0.0, 0.0, 0.5, 0.5, 1.0,
+    ], dtype=np.float32)
+    # indices por cada lado
+    indexData = np.array([
+        0, 1, 2
+    ])
+    return Shape(vertexData, indexData)
+
 
 def createRoof():
     vertexData = np.array([
         # positions        # texture
-        -1.0, -1.0, 0.0,  0.0, 0.0,
-        -1.0,  1.0, 0.0,  1.0, 0.0,
-        0.0,  -1.0, 1.0,  0.0, 0.5,
-        0.0,   1.0, 1.0,  1.0, 0.5,
-        1.0,  -1.0, 0.0,  0.0, 1.0,
-        1.0,   1.0, 0.0,  1.0, 1.0
+        -0.5, -0.5, -0.5,  0.0, 0.0,
+        -0.5,  0.5, -0.5,  1.0, 0.0,
+        0.0,  -0.5, 0.5,  0.0, 0.5,
+        0.0,   0.5, 0.5,  1.0, 0.5,
+        0.5,  -0.5, -0.5,  0.0, 1.0,
+        0.5,   0.5, -0.5,  1.0, 1.0
     ], dtype=np.float32)
     # indices por cada lado
     indexData = np.array([
