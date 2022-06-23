@@ -85,7 +85,7 @@ def main():
     
     ################################################################################ WRAP MODES ################################################################################
     gpuShape.texture = es.textureSimpleSetup(
-        getAssetPath("bricks.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
+        getAssetPath("baboon.png"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
         # getAssetPath("bricks.jpg"), GL_CLAMP_TO_EDGE, GL_REPEAT, GL_LINEAR, GL_LINEAR)
         # getAssetPath("bricks.jpg"), GL_REPEAT, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
         # getAssetPath("bricks.jpg"), GL_REPEAT, GL_REPEAT, GL_LINEAR, GL_LINEAR)

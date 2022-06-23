@@ -1,23 +1,14 @@
 import numpy as np
 
 def translate(tx, ty, tz):
-    #matriz de transformacion
     return np.array([
         [1,0,0,tx],
         [0,1,0,ty],
         [0,0,1,tz],
         [0,0,0,1]], dtype = np.float32)
 
-def identity():
-    #matriz de identidad
-    return np.array([
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1]], dtype=np.float32)
 
 def scale(sx, sy, sz):
-    #matriz de escala
     return np.array([
         [sx,0,0,0],
         [0,sy,0,0],
@@ -26,7 +17,6 @@ def scale(sx, sy, sz):
 
 
 def rotationX(theta):
-    #matriz de rotacion en x
     sin_theta = np.sin(theta)
     cos_theta = np.cos(theta)
 
@@ -38,7 +28,6 @@ def rotationX(theta):
 
 
 def rotationY(theta):
-    #matriz de rotacion en y
     sin_theta = np.sin(theta)
     cos_theta = np.cos(theta)
 
@@ -50,7 +39,6 @@ def rotationY(theta):
 
 
 def rotationZ(theta):
-    #matriz de rotacion en z
     sin_theta = np.sin(theta)
     cos_theta = np.cos(theta)
 
@@ -62,7 +50,6 @@ def rotationZ(theta):
 
 
 def matmul(mats):
-    #multiplica matrices
     out = mats[0]
     for i in range(1, len(mats)):
         out = np.matmul(out, mats[i])
@@ -71,7 +58,6 @@ def matmul(mats):
 
 
 def frustum(left, right, bottom, top, near, far):
-    #Trae los objetos a una pantalla con perspectiva
     r_l = right - left
     t_b = top - bottom
     f_n = far - near
@@ -95,13 +81,12 @@ def frustum(left, right, bottom, top, near, far):
 
 
 def perspective(fovy, aspect, near, far):
-    #aplica la perspectiva
     halfHeight = np.tan(np.pi * fovy / 360) * near
     halfWidth = halfHeight * aspect
     return frustum(-halfWidth, halfWidth, -halfHeight, halfHeight, near, far)
 
+
 def ortho(left, right, bottom, top, near, far):
-    #proyeccion ortografica
     r_l = right - left
     t_b = top - bottom
     f_n = far - near
@@ -123,8 +108,8 @@ def ortho(left, right, bottom, top, near, far):
         0,
         1]], dtype = np.float32)
 
+
 def lookAt(eye, at, up):
-    #La matriz para la camara (posicion, donde mira y que direccion es arriba)
 
     forward = (at - eye)
     forward = forward / np.linalg.norm(forward)
