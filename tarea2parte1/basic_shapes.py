@@ -35,6 +35,35 @@ def createSquare():
     ])
     return Shape(vertexData, indexData)
 
+def createTextureQuadWithNormal():
+    # crea un cuadrado con texturas
+    vertexData = np.array([
+        # positions        # texture
+        -0.5, 0.0, -0.5, 0.0, 1.0,   0.0, 1.0, 0.0,
+        0.5, 0.0, -0.5,  1.0, 1.0,   0.0, 1.0, 0.0,
+        -0.5, 0.0, 0.5,  0.0, 0.0,   0.0, 1.0, 0.0,
+        0.5, 0.0, 0.5,   1.0, 0.0,   0.0, 1.0, 0.0
+    ], dtype=np.float32)
+    # indices por cada lado
+    indexData = np.array([
+        0, 1, 2, 1, 2, 3
+    ])
+    return Shape(vertexData, indexData)
+
+def createTriangleWithNormal():
+    #crea un triangulo con texturas
+    vertexData = np.array([
+        # positions        # texture
+        -0.5, 0.0, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
+        0.5, 0.0, -0.5, 1.0, 0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.5, 0.5, 1.0, 0.0, 1.0, 0.0
+    ], dtype=np.float32)
+    # indices por cada lado
+    indexData = np.array([
+        0, 1, 2
+    ])
+    return Shape(vertexData, indexData)
+
 def createTriangle():
     #crea un triangulo con texturas
     vertexData = np.array([
@@ -42,6 +71,20 @@ def createTriangle():
         -0.5, 0.0, -0.5, 0.0, 0.0,
         0.5, 0.0, -0.5, 1.0, 0.0,
         0.0, 0.0, 0.5, 0.5, 1.0,
+    ], dtype=np.float32)
+    # indices por cada lado
+    indexData = np.array([
+        0, 1, 2
+    ])
+    return Shape(vertexData, indexData)
+
+def createTriangleRectangleWithNormals():
+    #crea un triangulo rectangulo con texturas
+    vertexData = np.array([
+        # positions        # texture
+        -0.5, 0.0, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
+        0.5, 0.0, -0.5, 1.0, 0.0, 0.0, 1.0, 0.0,
+        -0.5, 0.0, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0
     ], dtype=np.float32)
     # indices por cada lado
     indexData = np.array([
@@ -65,62 +108,70 @@ def createTriangleRectangle():
 
 def createRoof():
     #crea un techo con texturas
+
+    theta = np.arctan(2)
+    cos = np.cos(theta)
+    sen = np.sin(theta)
     vertexData = np.array([
         # positions        # texture
-        -0.5, -0.5, -0.5,  0.0, 0.0,
-        -0.5,  0.5, -0.5,  1.0, 0.0,
-        0.0,  -0.5, 0.5,  0.0, 0.5,
-        0.0,   0.5, 0.5,  1.0, 0.5,
-        0.5,  -0.5, -0.5,  0.0, 1.0,
-        0.5,   0.5, -0.5,  1.0, 1.0
+        -0.5, -0.5, -0.5,  0.0, 0.0,  -cos, 0.0, sen,
+        -0.5,  0.5, -0.5,  1.0, 0.0,  -cos ,0.0, sen,
+        0.0,  -0.5, 0.5,  0.0, 0.5,   -cos ,0.0, sen,
+        0.0,   0.5, 0.5,  1.0, 0.5,   -cos ,0.0, sen,
+
+
+        0.0, -0.5, 0.5, 0.0, 0.5,   cos ,0.0, sen,
+        0.0, 0.5, 0.5, 1.0, 0.5,    cos ,0.0, sen,
+        0.5,  -0.5, -0.5,  0.0, 1.0,cos ,0.0, sen,
+        0.5,   0.5, -0.5,  1.0, 1.0,cos ,0.0, sen
     ], dtype=np.float32)
     # indices por cada lado
     indexData = np.array([
         0, 1, 2, 1, 2, 3,
-        2, 3, 4, 3, 4, 5
+        4, 5, 6, 5, 6, 7
     ])
     return Shape(vertexData, indexData)
 
 
-def createCube():
+def createCubeWithNormals():
     # creamos un cubo con texturas
     vertices = [
         #   posicion         coordenadas de la textura
         # techo del cubo
-        0.5, 0.5, 0.5, 1 / 4, 2 / 3,
-        0.5, -0.5, 0.5, 0, 2 / 3,
-        -0.5, -0.5, 0.5, 0, 1 / 3,
-        -0.5, 0.5, 0.5, 1 / 4, 1 / 3,
+        0.5, 0.5, 0.5, 1 / 4, 2 / 3, 0.0,0.0,1.0,
+        0.5, -0.5, 0.5, 0, 2 / 3,    0.0,0.0,1.0,
+        -0.5, -0.5, 0.5, 0, 1 / 3,   0.0,0.0,1.0,
+        -0.5, 0.5, 0.5, 1 / 4, 1 / 3,0.0,0.0,1.0,
 
         # suelo
-        -0.5, -0.5, -0.5, 3 / 4, 1 / 3,
-        0.5, -0.5, -0.5, 3 / 4, 2 / 3,
-        0.5, 0.5, -0.5, 2 / 4, 2 / 3,
-        -0.5, 0.5, -0.5, 2 / 4, 1 / 3,
+        -0.5, -0.5, -0.5, 3 / 4, 1 / 3,  0.0,0.0,-1.0,
+        0.5, -0.5, -0.5, 3 / 4, 2 / 3,  0.0,0.0,-1.0,
+        0.5, 0.5, -0.5, 2 / 4, 2 / 3,0.0,0.0,-1.0,
+        -0.5, 0.5, -0.5, 2 / 4, 1 / 3,0.0,0.0,-1.0,
 
         # lado derecho
-        0.5, -0.5, -0.5, 2 / 4, 1,
-        0.5, 0.5, -0.5, 2 / 4, 2 / 3,
-        0.5, 0.5, 0.5, 1 / 4, 2 / 3,
-        0.5, -0.5, 0.5, 1 / 4, 1,
+        0.5, -0.5, -0.5, 2 / 4, 1,   1.0,0.0,0.0,
+        0.5, 0.5, -0.5, 2 / 4, 2 / 3, 1.0,0.0,0.0,
+        0.5, 0.5, 0.5, 1 / 4, 2 / 3, 1.0,0.0,0.0,
+        0.5, -0.5, 0.5, 1 / 4, 1, 1.0,0.0,0.0,
 
         # lado izquierdo
-        -0.5, -0.5, -0.5, 3 / 4, 2 / 3,
-        -0.5, 0.5, -0.5, 2 / 4, 2 / 3,
-        -0.5, 0.5, 0.5, 2 / 4, 1 / 3,
-        -0.5, -0.5, 0.5, 3 / 4, 1 / 3,
+        -0.5, -0.5, -0.5, 3 / 4, 2 / 3, -1.0,0.0,0.0,
+        -0.5, 0.5, -0.5, 2 / 4, 2 / 3, -1.0,0.0,0.0,
+        -0.5, 0.5, 0.5, 2 / 4, 1 / 3, -1.0,0.0,0.0,
+        -0.5, -0.5, 0.5, 3 / 4, 1 / 3, -1.0,0.0,0.0,
 
         # frente
-        -0.5, 0.5, -0.5, 2 / 4, 1 / 3,
-        0.5, 0.5, -0.5, 2 / 4, 2 / 3,
-        0.5, 0.5, 0.5, 1 / 4, 2 / 3,
-        -0.5, 0.5, 0.5, 1 / 4, 1 / 3,
+        -0.5, 0.5, -0.5, 2 / 4, 1 / 3, 0.0,1.0,0.0,
+        0.5, 0.5, -0.5, 2 / 4, 2 / 3, 0.0,1.0,0.0,
+        0.5, 0.5, 0.5, 1 / 4, 2 / 3, 0.0,1.0,0.0,
+        -0.5, 0.5, 0.5, 1 / 4, 1 / 3, 0.0,1.0,0.0,
 
         # atras
-        -0.5, -0.5, -0.5, 1, 1 / 3,
-        0.5, -0.5, -0.5, 1, 2 / 3,
-        0.5, -0.5, 0.5, 3 / 4, 2 / 3,
-        -0.5, -0.5, 0.5, 3 / 4, 1 / 3
+        -0.5, -0.5, -0.5, 1, 1 / 3, 0.0,-1.0,0.0,
+        0.5, -0.5, -0.5, 1, 2 / 3, 0.0,-1.0,0.0,
+        0.5, -0.5, 0.5, 3 / 4, 2 / 3, 0.0,-1.0,0.0,
+        -0.5, -0.5, 0.5, 3 / 4, 1 / 3, 0.0,-1.0,0.0
     ]
 
     #los indices de cada lado
@@ -133,4 +184,5 @@ def createCube():
         20, 21, 22, 22, 23, 20]
 
     return Shape(vertices, indices)
+
 

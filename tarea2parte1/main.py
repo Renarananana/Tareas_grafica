@@ -2,8 +2,7 @@
 import random
 
 import glfw
-from easy_shaders import textureSimpleSetup, \
-    SimpleModelViewProjectionShaderProgramTex
+from easy_shaders import *
 from basic_shapes import *
 import numpy as np
 import transformations as tr
@@ -12,6 +11,9 @@ import os.path
 import camara
 import scene_graph as sg
 import car_controller
+
+
+
 
 
 # Funcion para encontrar el path a un archivo en la carpeta de assets, la saqué del aux 5, pero la modifiqué
@@ -24,6 +26,146 @@ def getAssetPath(filename):
     assetsDirectory = os.path.join(parentFolderPath, "assets")
     requestedPath = os.path.join(assetsDirectory, filename)
     return requestedPath
+
+
+
+def readOFF(filename, color):
+    vertices = []
+    normals = []
+    faces = []
+
+    with open(filename, 'r') as file:
+        line = file.readline().strip()
+        assert line == "OFF"
+
+        line = file.readline().strip()
+        aux = line.split(' ')
+
+        numVertices = int(aux[0])
+        numFaces = int(aux[1])
+
+        for i in range(numVertices):
+            aux = file.readline().strip().split(' ')
+            vertices += [float(coord) for coord in aux[0:]]
+
+        vertices = np.asarray(vertices)
+        vertices = np.reshape(vertices, (numVertices, 3))
+        print(f'Vertices shape: {vertices.shape}')
+
+        normals = np.zeros((numVertices, 3), dtype=np.float32)
+        print(f'Normals shape: {normals.shape}')
+
+        for i in range(numFaces):
+            aux = file.readline().strip().split(' ')
+            aux = [int(index) for index in aux[0:]]
+            faces += [aux[1:]]
+
+            vecA = [vertices[aux[2]][0] - vertices[aux[1]][0], vertices[aux[2]][1] - vertices[aux[1]][1],
+                    vertices[aux[2]][2] - vertices[aux[1]][2]]
+            vecB = [vertices[aux[3]][0] - vertices[aux[2]][0], vertices[aux[3]][1] - vertices[aux[2]][1],
+                    vertices[aux[3]][2] - vertices[aux[2]][2]]
+
+            res = np.cross(vecA, vecB)
+            normals[aux[1]][0] += res[0]
+            normals[aux[1]][1] += res[1]
+            normals[aux[1]][2] += res[2]
+
+            normals[aux[2]][0] += res[0]
+            normals[aux[2]][1] += res[1]
+            normals[aux[2]][2] += res[2]
+
+            normals[aux[3]][0] += res[0]
+            normals[aux[3]][1] += res[1]
+            normals[aux[3]][2] += res[2]
+            # print(faces)
+        norms = np.linalg.norm(normals, axis=1)
+        normals = normals / norms[:, None]
+
+        color = np.asarray(color)
+        color = np.tile(color, (numVertices, 1))
+
+        vertexData = np.concatenate((vertices, color), axis=1)
+        vertexData = np.concatenate((vertexData, normals), axis=1)
+
+        print(vertexData.shape)
+
+        indices = []
+        vertexDataF = []
+        index = 0
+
+        for face in faces:
+            vertex = vertexData[face[0], :]
+            vertexDataF += vertex.tolist()
+            vertex = vertexData[face[1], :]
+            vertexDataF += vertex.tolist()
+            vertex = vertexData[face[2], :]
+            vertexDataF += vertex.tolist()
+
+            indices += [index, index + 1, index + 2]
+            index += 3
+
+        return Shape(vertexDataF, indices)
+
+def createOFFShape(pipeline, filename, r,g, b):
+    shape = readOFF(getAssetPath(filename), (r, g, b))
+    gpuShape = GPUShape().initBuffers()
+    pipeline.setupVAO(gpuShape)
+    gpuShape.fillBuffers(shape.vertexData, shape.indexData)
+
+    return gpuShape
+
+
+
+
+class Spotlight:
+    def __init__(self):
+        self.ambient = np.array([0,0,0])
+        self.diffuse = np.array([0,0,0])
+        self.specular = np.array([0,0,0])
+        self.constant = 0
+        self.linear = 0
+        self.quadratic = 0
+        self.position = np.array([0,0,0])
+        self.direction = np.array([0,0,0])
+        self.cutOff = 0
+        self.outerCutOff = 0
+
+
+def setLights():
+
+    spotlightsPool = dict()
+
+    # TAREA4: Primera luz spotlight
+    spot1 = Spotlight()
+    spot1.ambient = np.array([0.0, 0.0, 0.0])
+    spot1.diffuse = np.array([1.0, 1.0, 1.0])
+    spot1.specular = np.array([1.0, 1.0, 1.0])
+    spot1.constant = 1.0
+    spot1.linear = 0.09
+    spot1.quadratic = 0.032
+    spot1.position = np.array([0, -1, 1])  # TAREA4: esta ubicada en esta posición
+    spot1.direction = np.array([0, 1, 0])  # TAREA4: está apuntando perpendicularmente hacia el terreno (Y-, o sea hacia abajo)
+    spot1.cutOff = np.cos(np.radians(12.5))  # TAREA4: corte del ángulo para la luz
+    spot1.outerCutOff = np.cos(np.radians(90))  # TAREA4: la apertura permitida de la luz es de 45°
+    # mientras más alto es este ángulo, más se difumina su efecto
+
+    spotlightsPool['spot1'] = spot1  # TAREA4: almacenamos la luz en el diccionario, con una clave única
+
+    # TAREA4: Segunda luz spotlight
+    spot2 = Spotlight()
+    spot2.ambient = np.array([0.0, 0.0, 0.0])
+    spot2.diffuse = np.array([1.0, 1.0, 1.0])
+    spot2.specular = np.array([1.0, 1.0, 1.0])
+    spot2.constant = 1.0
+    spot2.linear = 0.09
+    spot2.quadratic = 0.032
+    spot2.position = np.array([-2, 0, 5])  # TAREA4: Está ubicada en esta posición
+    spot2.direction = np.array([0, 0, 1])  # TAREA4: también apunta hacia abajo
+    spot2.cutOff = np.cos(np.radians(12.5))
+    spot2.outerCutOff = np.cos(np.radians(45))  # TAREA4: Esta luz tiene menos apertura, por eso es más focalizada
+    spotlightsPool['spot2'] = spot2  # TAREA4: almacenamos la luz en el diccionario
+
+    return spotlightsPool
 
 
 # creamos la camara
@@ -74,75 +216,74 @@ def keyCallback(GLFWwindow, key, scancode, action, mods):
 
 
 
-def create_scene(pipeline):
+def create_scene(pipeline, pipeline_light):
     # creamos todas las figuras que ocuparemos para crear el condominio
 
-    glUseProgram(pipeline.shaderProgram)
+    glUseProgram(pipeline_light.shaderProgram)
 
-    white_wall = createCube().getGPUShape(pipeline)
+    white_wall = createCubeWithNormals().getGPUShape(pipeline_light)
     white_wall.texture = textureSimpleSetup(getAssetPath("muralla_blanca.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
                                             GL_LINEAR,
                                             GL_LINEAR)
-    yellow_wall = createCube().getGPUShape(pipeline)
+    yellow_wall = createCubeWithNormals().getGPUShape(pipeline_light)
     yellow_wall.texture = textureSimpleSetup(getAssetPath("muralla_amarilla.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
                                             GL_LINEAR,
                                             GL_LINEAR)
-    green_wall = createCube().getGPUShape(pipeline)
+    green_wall = createCubeWithNormals().getGPUShape(pipeline_light)
     green_wall.texture = textureSimpleSetup(getAssetPath("muralla_verde.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
                                              GL_LINEAR,
                                              GL_LINEAR)
 
 
-    roof = createRoof().getGPUShape(pipeline)
+    roof = createRoof().getGPUShape(pipeline_light)
     roof.texture = textureSimpleSetup(getAssetPath("techo.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR,
                                       GL_LINEAR)
 
-    door_GPU = createSquare().getGPUShape(pipeline)
+    door_GPU = createTextureQuadWithNormal().getGPUShape(pipeline_light)
     door_GPU.texture = textureSimpleSetup(getAssetPath("puerta.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR,
                                             GL_LINEAR)
-    door2_GPU = createSquare().getGPUShape(pipeline)
+    door2_GPU = createTextureQuadWithNormal().getGPUShape(pipeline_light)
     door2_GPU.texture = textureSimpleSetup(getAssetPath("puerta2.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR,
                                             GL_LINEAR)
 
-    door3_GPU = createSquare().getGPUShape(pipeline)
+    door3_GPU = createTextureQuadWithNormal().getGPUShape(pipeline_light)
     door3_GPU.texture = textureSimpleSetup(getAssetPath("puerta3.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR,
                                            GL_LINEAR)
 
-    white_wall_triangle = createTriangle().getGPUShape(pipeline)
+    white_wall_triangle = createTriangleWithNormal().getGPUShape(pipeline_light)
     white_wall_triangle.texture = textureSimpleSetup(getAssetPath("muralla_blanca.jpg"), GL_CLAMP_TO_EDGE,
                                                      GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
-    yellow_wall_triangle = createTriangle().getGPUShape(pipeline)
+    yellow_wall_triangle = createTriangleWithNormal().getGPUShape(pipeline_light)
     yellow_wall_triangle.texture = textureSimpleSetup(getAssetPath("muralla_amarilla.jpg"), GL_CLAMP_TO_EDGE,
                                                      GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
-    green_wall_triangle = createTriangle().getGPUShape(pipeline)
+    green_wall_triangle = createTriangleWithNormal().getGPUShape(pipeline_light)
     green_wall_triangle.texture = textureSimpleSetup(getAssetPath("muralla_verde.jpg"), GL_CLAMP_TO_EDGE,
                                                       GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
 
 
-    window_GPU = createSquare().getGPUShape(pipeline)
+    window_GPU = createTextureQuadWithNormal().getGPUShape(pipeline_light)
     window_GPU.texture = textureSimpleSetup(getAssetPath("ventana.jpg"), GL_CLAMP_TO_EDGE,
                                                      GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
 
-    window2_GPU = createSquare().getGPUShape(pipeline)
+    window2_GPU = createTextureQuadWithNormal().getGPUShape(pipeline_light)
     window2_GPU.texture = textureSimpleSetup(getAssetPath("ventana2.png"), GL_CLAMP_TO_EDGE,
                                             GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
 
-    window3_GPU = createSquare().getGPUShape(pipeline)
+    window3_GPU = createTextureQuadWithNormal().getGPUShape(pipeline_light)
     window3_GPU.texture = textureSimpleSetup(getAssetPath("ventana3.jpg"), GL_CLAMP_TO_EDGE,
                                              GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
 
-    tierra_GPU = createSquare().getGPUShape(pipeline)
+    tierra_GPU = createTextureQuadWithNormal().getGPUShape(pipeline_light)
     tierra_GPU.texture = textureSimpleSetup(getAssetPath("suelo.jpg"), GL_CLAMP_TO_EDGE,
                                             GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
 
 
-    calle_GPU = createSquare().getGPUShape(pipeline)
+    calle_GPU = createTextureQuadWithNormal().getGPUShape(pipeline_light)
     calle_GPU.texture = textureSimpleSetup(getAssetPath("calle.jpg"), GL_CLAMP_TO_EDGE,
                                             GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
-    pasto_GPU = createTriangleRectangle().getGPUShape(pipeline)
+    pasto_GPU = createTriangleRectangleWithNormals().getGPUShape(pipeline_light)
     pasto_GPU.texture = textureSimpleSetup(getAssetPath("pasto.jpg"), GL_CLAMP_TO_EDGE,
                                             GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
-
 
 
     #Funciones que crean casas a partir de los objetos ya creados. Retorna un nodo con la casa
@@ -364,19 +505,11 @@ def create_scene(pipeline):
         roof_wall2 = sg.SceneGraphNode("roof_wall2")
         roof_wall2.transform = tr.matmul(
             [tr.scale(1, 1, 0.55),
-             tr.translate(0, -0.5, .47)
+             tr.translate(0, -0.5, .47),
+             tr.rotationZ(np.pi)
              ])
 
-        green_wall_roof2 = sg.SceneGraphNode("green_wall_roof2")
-        green_wall_roof2.childs = [green_wall_triangle]
-        window_roof_wall2 = sg.SceneGraphNode("window_roof_wall2 ")
-        window_roof_wall2.transform = tr.matmul([
-            tr.translate(0, -0.01, -0.2),
-            tr.scale(0.3, 1, 0.3)
-        ])
-        window_roof_wall2.childs = [window3_GPU]
-
-        roof_wall2.childs = [green_wall_roof2, window_roof_wall2]
+        roof_wall2.childs = roof_wall1.childs
 
         roof_node.childs += [roof_up, roof_wall2, roof_wall1]
 
@@ -400,7 +533,8 @@ def create_scene(pipeline):
         door_node = sg.SceneGraphNode("door")
         door_node.transform = tr.matmul(
             [tr.scale(.2, 1, .4),
-             tr.translate(0, -0.501, -1.25)])
+             tr.translate(0, -0.501, -1.25),
+             tr.rotationZ(np.pi)])
         door_node.childs = [door3_GPU]
 
         window_lower_1 = sg.SceneGraphNode("window")
@@ -422,21 +556,18 @@ def create_scene(pipeline):
 
         window_middle_1 = sg.SceneGraphNode("window")
         window_middle_1.transform = tr.matmul(
-            [tr.translate(0.2, -0.501, -0.25), tr.scale(0.3, 1, 0.3)])
+            [tr.translate(0.2, -0.501, -0.25), tr.scale(0.3, 1, 0.3),tr.rotationZ(np.pi)])
         window_middle_1.childs = [window3_GPU]
 
         window_middle_2 = sg.SceneGraphNode("window")
         window_middle_2.transform = tr.matmul(
-            [tr.translate(-.2, -0.501, -0.25), tr.scale(0.3, 1, 0.3)])
+            [tr.translate(-.2, -0.501, -0.25), tr.scale(0.3, 1, 0.3),tr.rotationZ(np.pi)])
         window_middle_2.childs = [window3_GPU]
 
         middle_part.childs += [wall, window_middle_1, window_middle_2]
         middle_part.transform = tr.translate(0, 0, .49)
         house.childs += [upper_part, lower_part,middle_part]
         return house
-
-
-
 
     # Definimos el nodo de escena
     scene = sg.SceneGraphNode('system')
@@ -488,18 +619,6 @@ def create_scene(pipeline):
             casas_nodo.childs += [house]
     scene.childs += [casas_nodo]
     casas_nodo.transform = tr.translate(0,0,.711)
-
-    #auto
-    auto_nodo = sg.SceneGraphNode("auto")
-    cuerpo_auto = sg.SceneGraphNode("cuerpo_nodo")
-    cuerpo_auto.childs = [green_wall]
-    cuerpo_auto.transform = tr.matmul([tr.scale(1,.7,.3)])
-
-
-
-    auto_nodo.transform = tr.matmul([tr.translate(0,-1.5,.5)])
-    auto_nodo.childs += [cuerpo_auto]
-    scene.childs += [auto_nodo]
 
 
     #suelo
@@ -563,8 +682,89 @@ def create_scene(pipeline):
     return scene
 
 
+def generate_car_scene(pipeline):
+    chasis = createOFFShape(pipeline, 'alfa2.off', 0.7, 0.1, 0.0)
+    wheel = createOFFShape(pipeline, 'wheel.off', 0.0, 0.0, 0.0)
+
+    scale = 2.0
+    rotatingWheelNode = sg.SceneGraphNode('rotatingWheel')
+    rotatingWheelNode.childs += [wheel]
+
+    chasisNode = sg.SceneGraphNode('chasis')
+    chasisNode.transform = tr.scale(scale,scale,scale)
+    chasisNode.childs += [chasis]
+
+    wheel1Node = sg.SceneGraphNode('wheel1')
+    wheel1Node.transform = tr.matmul([tr.scale(scale,scale,scale), tr.translate(0.056390, 0.037409, 0.091705)])
+    wheel1Node.childs += [rotatingWheelNode]
+
+    wheel2Node = sg.SceneGraphNode('wheel2')
+    wheel2Node.transform = tr.matmul([tr.scale(scale,scale,scale), tr.translate(-0.060390, 0.037409, -0.091705)])
+    wheel2Node.childs += [rotatingWheelNode]
+
+    wheel3Node = sg.SceneGraphNode('wheel3')
+    wheel3Node.transform = tr.matmul([tr.scale(scale,scale,scale), tr.translate(-0.056390, 0.037409, 0.091705)])
+    wheel3Node.childs += [rotatingWheelNode]
+
+    wheel4Node = sg.SceneGraphNode('wheel4')
+    wheel4Node.transform = tr.matmul([tr.scale(scale,scale,scale), tr.translate(0.066090, 0.037409, -0.091705)])
+    wheel4Node.childs += [rotatingWheelNode]
+
+    car1 = sg.SceneGraphNode('car1')
+    car1.transform = tr.matmul([tr.translate(2.0, -0.037409, 5.0), tr.rotationY(np.pi)])
+    car1.childs += [chasisNode]
+    car1.childs += [wheel1Node]
+    car1.childs += [wheel2Node]
+    car1.childs += [wheel3Node]
+    car1.childs += [wheel4Node]
+
+    scene = sg.SceneGraphNode('system-car')
+    scene.childs += [car1]
+
+    return scene
+
+
+def view_setup(pipeline,view):
+    glUseProgram(pipeline.shaderProgram)
+    glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
+
+def projection_setup(pipeline,projection):
+    glUseProgram(pipeline.shaderProgram)
+    glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "projection"), 1, GL_TRUE, projection)
+
+def lights_setup(pipeline,spotlightsPool):
+    glUseProgram(pipeline.shaderProgram)
+
+    glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "pointLights[0].ambient"), 0.2, 0.2, 0.2)
+    glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "pointLights[0].diffuse"), 0.0, 0.0, 0.0)
+    glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "pointLights[0].specular"), 0.0, 0.0, 0.0)
+    glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "pointLights[0].constant"), 0.1)
+    glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "pointLights[0].linear"), 0.1)
+    glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "pointLights[0].quadratic"), 0.01)
+    glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "pointLights[0].position"), 5, 5, 5)
+
+    glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "material.ambient"), 0.2, 0.2, 0.2)
+    glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "material.diffuse"), 0.9, 0.9, 0.9)
+    glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "material.specular"), 1.0, 1.0, 1.0)
+    glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "material.shininess"), 32)
+
+    for i, (k,v) in enumerate(spotlightsPool.items()):
+        baseString = "spotLights[" + str(i) + "]."
+
+        glUniform3fv(glGetUniformLocation(pipeline.shaderProgram, baseString + "ambient"), 1, v.ambient)
+        glUniform3fv(glGetUniformLocation(pipeline.shaderProgram, baseString + "diffuse"), 1, v.diffuse)
+        glUniform3fv(glGetUniformLocation(pipeline.shaderProgram, baseString + "specular"), 1, v.specular)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, baseString + "constant"), v.constant)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, baseString + "linear"), 0.09)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, baseString + "quadratic"), 0.032)
+        glUniform3fv(glGetUniformLocation(pipeline.shaderProgram, baseString + "position"), 1, v.position)
+        glUniform3fv(glGetUniformLocation(pipeline.shaderProgram, baseString + "direction"), 1, v.direction)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, baseString + "cutOff"), v.cutOff)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, baseString + "outerCutOff"), v.outerCutOff)
+
 # funcion del programa principal
 def main():
+
     if not glfw.init():
         glfw.set_window_should_close(window, True)
         return -1
@@ -585,23 +785,29 @@ def main():
     glfw.make_context_current(window)
 
 
-    # llamamos el programa de shaders de las esferas (textura)
-    pipeline = SimpleModelViewProjectionShaderProgramTex()
+    spotlights = setLights()
 
+    # llamamos el programa de shaders de textura
+    pipeline_tex = SimpleModelViewProjectionShaderProgramTex()
+    pipeline_color = SimpleModelViewProjectionShaderProgramColor()
+    pipeline_tex_light = MultipleLightTextureShaderProgram()
 
     # limpiamos la ventana
     glClearColor(0.2, 0.3, 0.6, 1.0)
 
     glEnable(GL_DEPTH_TEST)
 
-    #se crea la escena
-    dibujo = create_scene(pipeline)
-    auto = sg.findNode(dibujo,"auto")
+    #se crea la escena del barrio
+    barrio = create_scene(pipeline_tex, pipeline_tex_light)
+
+    #se crea la escena del auto
+    auto = generate_car_scene(pipeline_color)
 
 
 
     # tiempo para el delta time
     t0 = glfw.get_time()
+
 
     while not glfw.window_should_close(window):
         # calculamos el delta time
@@ -610,7 +816,7 @@ def main():
         t0 = t1
 
         car_controller.update(dt)
-        auto.transform = tr.matmul([tr.translate(car_controller.pos[0],car_controller.pos[1],car_controller.pos[2]),tr.rotationZ(car_controller.rotZ),])
+        auto.transform = tr.matmul([tr.translate(car_controller.pos[0],car_controller.pos[1],car_controller.pos[2]),tr.rotationZ(car_controller.rotZ - np.pi/2),tr.translate(-4,10,0),tr.rotationX(np.pi/2),tr.scale(2,2,2)])
 
 
         # calculamos la matriz de perspectiva
@@ -622,14 +828,21 @@ def main():
             projection = tr.ortho(-11, 9, -10, 10, 0.1, 100)
 
         #mandamos la matriz de proyeccion a los shaders
-        glUseProgram(pipeline.shaderProgram)
-        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "projection"), 1, GL_TRUE, projection)
+        projection_setup(pipeline_tex, projection)
+        projection_setup(pipeline_tex_light, projection)
+        projection_setup(pipeline_color,projection)
+
 
         # calculamos la matriz de donde esta la camara
         camara.update(dt)
         view = camara.view()
 
-        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
+        view_setup(pipeline_tex,view)
+        view_setup(pipeline_tex_light, view)
+        view_setup(pipeline_color,view)
+
+
+        lights_setup(pipeline_tex_light, spotlights)
 
         #chequeamos inputs
         glfw.poll_events()
@@ -637,7 +850,11 @@ def main():
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         #dibujamos la escena en pantalla
-        sg.drawSceneGraphNode(dibujo,pipeline,"transform")
+        glUseProgram(pipeline_tex_light.shaderProgram)
+        sg.drawSceneGraphNode(barrio,pipeline_tex_light,"transform")
+
+        glUseProgram(pipeline_color.shaderProgram)
+        sg.drawSceneGraphNode(auto, pipeline_color,"transform")
 
         #swap de buffers
         glfw.swap_buffers(window)

@@ -2,6 +2,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 from PIL import Image
+from main import getAssetPath
 
 #esta funcion la saqué del aux 5.
 def textureSimpleSetup(imgName, sWrapMode, tWrapMode, minFilterMode, maxFilterMode):
@@ -167,4 +168,116 @@ class SimpleModelViewProjectionShaderProgramTex(SimpleShader):
 
         # Unbinding current vao
         glBindVertexArray(0)
+
+
+
+#shader para dibujar objetos con color y con un modelo de vision
+class SimpleModelViewProjectionShaderProgramColor(SimpleShader):
+    def __init__(self):
+        vertex_shader = """
+            #version 330
+
+            uniform mat4 projection;
+            uniform mat4 view;
+            uniform mat4 model;
+            uniform mat4 transform;
+
+            in vec3 position;
+            in vec3 color;
+            in vec3 normal;
+
+            out vec3 newColor;
+            out vec3 outNormal;
+            void main()
+            {
+                gl_Position =  projection * view * transform* vec4(position, 1.0f);
+                newColor = color;
+                outNormal = normal;
+            }
+            """
+
+        fragment_shader = """
+            #version 330
+            in vec3 newColor;
+
+            out vec4 outColor;
+
+            uniform sampler2D samplerTex;
+
+            void main()
+            {
+                outColor = vec4(newColor, 1.0f);
+            }
+            """
+
+        # Binding artificial vertex array object for validation
+        VAO = glGenVertexArrays(1)
+        glBindVertexArray(VAO)
+
+        self.shaderProgram = OpenGL.GL.shaders.compileProgram(
+            OpenGL.GL.shaders.compileShader(vertex_shader, OpenGL.GL.GL_VERTEX_SHADER),
+            OpenGL.GL.shaders.compileShader(fragment_shader, OpenGL.GL.GL_FRAGMENT_SHADER))
+
+    def setupVAO(self, gpuShape):
+        glBindVertexArray(gpuShape.vao)
+
+        glBindBuffer(GL_ARRAY_BUFFER, gpuShape.vbo)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gpuShape.ebo)
+
+        position = glGetAttribLocation(self.shaderProgram, "position")
+        glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(position)
+
+        color = glGetAttribLocation(self.shaderProgram, "color")
+        glVertexAttribPointer(color, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(color)
+
+        normal = glGetAttribLocation(self.shaderProgram, "normal")
+        glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(24))
+        glEnableVertexAttribArray(normal)
+
+        # Unbinding current vao
+        glBindVertexArray(0)
+
+
+class MultipleLightTextureShaderProgram(SimpleShader):
+
+    def __init__(self):
+        # TAREA4: Ahora los shaders están en archivos de texto independientes, aquí los leemos
+        with open(getAssetPath('multiple_lights_textures.vs'), 'r') as f:
+            vertex_shader = f.readlines()
+
+        with open(getAssetPath('multiple_lights_textures.fs'), 'r') as f:
+            fragment_shader = f.readlines()
+
+        # Binding artificial vertex array object for validation
+        VAO = glGenVertexArrays(1)
+        glBindVertexArray(VAO)
+
+        self.shaderProgram = OpenGL.GL.shaders.compileProgram(
+            OpenGL.GL.shaders.compileShader(vertex_shader, OpenGL.GL.GL_VERTEX_SHADER),
+            OpenGL.GL.shaders.compileShader(fragment_shader, OpenGL.GL.GL_FRAGMENT_SHADER))
+
+    def setupVAO(self, gpuShape):
+        glBindVertexArray(gpuShape.vao)
+
+        glBindBuffer(GL_ARRAY_BUFFER, gpuShape.vbo)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gpuShape.ebo)
+
+        # 3d vertices + rgb color + 3d normals => 3*4 + 2*4 + 3*4 = 32 bytes
+        position = glGetAttribLocation(self.shaderProgram, "position")
+        glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(position)
+
+        texCoords = glGetAttribLocation(self.shaderProgram, "texCoords")
+        glVertexAttribPointer(texCoords, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(texCoords)
+
+        normal = glGetAttribLocation(self.shaderProgram, "normal")
+        glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
+        glEnableVertexAttribArray(normal)
+
+        # Unbinding current vao
+        glBindVertexArray(0)
+
 

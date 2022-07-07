@@ -104,6 +104,7 @@ def loadTextures():
 
 def createOFFShape(pipeline, filename, r,g, b):
     shape = readOFF(getAssetPath(filename), (r, g, b))
+    #print(shape.vertices)
     gpuShape = es.GPUShape().initBuffers()
     pipeline.setupVAO(gpuShape)
     gpuShape.fillBuffers(shape.vertices, shape.indices, GL_STATIC_DRAW)

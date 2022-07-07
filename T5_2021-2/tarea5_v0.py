@@ -53,6 +53,7 @@ class Spotlight:
         self.cutOff = 0
         self.outerCutOff = 0
 
+
 controller = Controller()
 
 #TAREA4: aquí se crea el pool de luces spotlight (como un diccionario)
