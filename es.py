@@ -2,7 +2,7 @@ from OpenGL.GL import *
 import OpenGL.GL.shaders
 import numpy as np
 
-SIZE_IN_BYTES = 5
+SIZE_IN_BYTES = 4
 
 class GPUShape:
     def __init__(self):
